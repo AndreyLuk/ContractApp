@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>contract_ru.qm</file>
+    </qresource>
+</RCC>

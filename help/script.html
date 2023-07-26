@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Скрипт создания схемы данных</title>
+		<style>
+		  body, a {
+            background-color: #123;
+            color: #ddd;
+          }
+		</style>
+	</head>
+	<body>
+		<p>
+			<a href="main.html">
+				Вернуться на главную страницу помощи.
+			</a>
+		</p>
+		<p>
+		<code>
+		
+-- ********************************************************************<br>
+-- Schema: contracts<br>
+DROP SCHEMA IF EXISTS contracts CASCADE;<br>
+CREATE SCHEMA contracts AUTHORIZATION postgres;<br>
+SET search_path TO contracts;<br>
+-- ********************************************************************<br>
+CREATE TABLE partner<br>
+(<br>
+  partner_id serial PRIMARY KEY,<br>
+  partner_name text NOT NULL,<br>
+  inum text<br>
+);<br>
+<br>
+CREATE TABLE contract_type<br>
+(<br>
+  type_id serial PRIMARY KEY,<br>
+  type_name varchar(50)<br>
+);<br>
+<br>
+CREATE TABLE contract_state<br>
+(<br>
+  state_id serial PRIMARY KEY,<br>
+  state_name varchar(30)<br>
+);<br>
+<br>
+CREATE TABLE contract<br>
+(<br>
+  contract_id serial PRIMARY KEY,<br>
+  type_id int NOT NULL REFERENCES contract_type,<br>
+  state_id int NOT NULL REFERENCES contract_state,<br>
+  partner_id int NOT NULL REFERENCES partner,<br>
+  contract_num varchar(50),<br>
+  contract_date date,<br>
+  start_date date,<br>
+  finish_date date,<br>
+  vat_rate numeric(4,1) DEFAULT 0,<br>
+  contract_sum money DEFAULT 0,<br>
+  vat_sum money DEFAULT 0,<br>
+  total_sum money DEFAULT 0,<br>
+  contract_note text,<br>
+  updated_date timestamp DEFAULT now(),<br>
+  updated_by varchar(30) DEFAULT user<br>
+);<br>
+<br>
+CREATE INDEX idx_contract_fk_type_id ON contract (type_id);<br>
+CREATE INDEX idx_contract_fk_state_id ON contract (state_id);<br>
+CREATE INDEX idx_contract_fk_partner_id ON contract (partner_id);<br>
+<br>
+-- ********************************************************************<br>
+-- create trigger functions<br>
+-- ********************************************************************<br>
+CREATE FUNCTION trf_updated ()<br>
+	RETURNS trigger<br>
+	LANGUAGE plpgsql<br>
+	VOLATILE <br>
+	CALLED ON NULL INPUT<br>
+	SECURITY INVOKER<br>
+	COST 100<br>
+	AS $$<br>
+BEGIN<br>
+    NEW.updated_date = CURRENT_TIMESTAMP;<br>
+    NEW.updated_by = "current_user"();<br>
+    NEW.vat_sum = NEW.contract_sum * ( NEW.vat_rate / 100 );<br>
+    NEW.total_sum = NEW.contract_sum + NEW.vat_sum;<br>
+    RETURN NEW;<br>
+END <br>
+$$;<br>
+<br>
+CREATE FUNCTION trf_inserted ()<br>
+	RETURNS trigger<br>
+	LANGUAGE plpgsql<br>
+	VOLATILE <br>
+	CALLED ON NULL INPUT<br>
+	SECURITY INVOKER<br>
+	COST 100<br>
+	AS $$<br>
+BEGIN<br>
+    NEW.vat_sum = NEW.contract_sum * ( NEW.vat_rate / 100 );<br>
+    NEW.total_sum = NEW.contract_sum + NEW.vat_sum;<br>
+    RETURN NEW;<br>
+END <br>
+$$;<br>
+<br>
+-- ********************************************************************<br>
+-- create triggers<br>
+-- ********************************************************************<br>
+CREATE TRIGGER tr_updated<br>
+	BEFORE UPDATE<br>
+	ON contract<br>
+	FOR EACH ROW<br>
+	EXECUTE PROCEDURE trf_updated();<br>
+<br>
+CREATE TRIGGER tr_inserted<br>
+	BEFORE INSERT<br>
+	ON contract<br>
+	FOR EACH ROW<br>
+	EXECUTE PROCEDURE trf_inserted();<br>
+<br>
+-- ********************************************************************<br>
+-- Inserting test data into contracts schema.<br>
+<br>
+INSERT INTO partner (partner_name, inum)<br>
+  VALUES ('ОАО Компания 1', '7701001001'),<br>
+  ('ОАО Компания 2', '7701001002'),<br>
+  ('ОАО Компания 3', '7701001003'),<br>
+  ('ООО Компания 4', '7701001004'),<br>
+  ('ООО Компания 5', '7701001005'),<br>
+  ('ООО Компания 6', '7701001006'),<br>
+  ('ОАО Компания 7', '7701001007'),<br>
+  ('ОАО Компания 8', '7701001008'),<br>
+  ('ОАО Компания 9', '7701001009'),<br>
+  ('ОАО Компания 10', '7701001010'),<br>
+  ('ООО Компания 11', '7701001011'),<br>
+  ('ООО Компания 12', '7701001012'),<br>
+  ('ОАО Компания 13', '7701001013'),<br>
+  ('ОАО Компания 14', '7701001014'),<br>
+  ('ОАО Компания 15', '7701001015'),<br>
+  ('ООО Компания 16', '7701001016'),<br>
+  ('ООО Компания 17', '7701001017'),<br>
+  ('ООО Компания 18', '7701001018'),<br>
+  ('ООО Компания 19', '7701001019'),<br>
+  ('ОАО Компания 20', '7701001020');<br>
+<br>
+INSERT INTO contract_type (type_name)<br>
+  VALUES ('Продажи'),<br>
+  ('Покупки'),<br>
+  ('Банковский'),<br>
+  ('Заём'),<br>
+  ('Услуги'),<br>
+  ('Страхование'),<br>
+  ('Дебетовый'),<br>
+  ('Кредитный'),<br>
+  ('Налоги'),<br>
+  ('Аренда'),<br>
+  ('Прочее');<br>
+<br>
+INSERT INTO contract_state (state_name)<br>
+  VALUES ('Неизвестно'),<br>
+  ('Отменён'),<br>
+  ('Закрыт'),<br>
+  ('Удалён'),<br>
+  ('Заморожен'),<br>
+  ('Заблокирован'),<br>
+  ('Открыт');<br>
+<br>
+INSERT INTO contract (type_id, state_id, partner_id, contract_num,<br>
+    contract_date, start_date, finish_date, vat_rate, contract_sum)<br>
+  VALUES <br>
+   (1, 7, 1, '01', '2023-01-11',  '2023-01-12', '2023-12-31', 10, 1000),<br>
+   (1, 7, 2, '02', '2023-01-11',  '2023-01-22', '2023-12-21', 0, 2000),<br>
+   (1, 7, 4, '03', '2023-01-11',  '2023-01-22', '2023-12-22', 20, 3000),<br>
+   (2, 1, 5, '04', '2023-01-11',  '2023-01-22', '2023-12-31', 18, 4000),<br>
+   (2, 7, 6, '05', '2023-01-11',  '2023-01-22', '2023-12-31', 10, 5000),<br>
+   (2, 7, 6, '06', '2023-01-12',  '2023-01-22', '2023-11-30', 0, 21000),<br>
+   (1, 7, 2, '07', '2023-01-12',  '2023-01-20', '2023-11-30', 10, 12000),<br>
+   (3, 2, 7, '08', '2023-01-12',  '2023-01-21', '2023-11-15', 18, 11000),<br>
+   (3, 7, 1, '09', '2023-01-13',  '2023-02-01', '2023-08-15', 20, 12000),<br>
+   (1, 3, 1, '10', '2023-01-13',  '2023-02-01', '2023-08-15', 10, 13000),<br>
+   (1, 7, 8, '11', '2023-01-13',  '2023-02-02', '2023-08-15', 0, 14000),<br>
+   (4, 7, 8, '12', '2023-01-14',  '2023-02-02', '2023-04-16', 0, 15000),<br>
+   (4, 7, 4, '13', '2023-01-14',  '2023-02-02', '2023-04-16', 10, 16000),<br>
+   (1, 4, 3, '14', '2023-01-14',  '2023-02-02', '2023-09-14', 18, 17000),<br>
+   (5, 7, 4, '15', '2023-01-14',  '2023-02-02', '2023-09-14', 18, 18000),<br>
+   (5, 7, 5, '16', '2023-01-14',  '2023-02-02', '2023-11-14', 0, 19000),<br>
+   (1, 7, 2, '17', '2023-01-14',  '2023-02-10', '2023-11-15', 10, 20000),<br>
+   (6, 5, 5, '18', '2023-01-14',  '2023-02-10', '2023-11-15', 0, 22000),<br>
+   (6, 7, 5, '19', '2023-01-15',  '2023-02-10', '2023-12-15', 10, 24000),<br>
+   (7, 7, 2, '20', '2023-01-15',  '2023-02-10', '2023-12-13', 10, 25000),<br>
+   (8, 2, 6, '21', '2023-01-15',  '2023-02-12', '2023-12-13', 10, 56000),<br>
+   (9, 7, 6, '22', '2023-01-15',  '2023-02-12', '2023-12-13', 20, 15000),<br>
+   (1, 7, 3, '23', '2023-01-15',  '2023-02-12', '2023-11-13', 18, 56000),<br>
+   (1, 7, 3, '24', '2023-01-16',  '2023-02-12', '2023-11-13', 0, 1000);<br>
+<br>
+			</code>
+		</p>
+	</body>
+</html>

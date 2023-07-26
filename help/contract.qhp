@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<QtHelpProject version="1.0">
+    <virtualFolder>contract</virtualFolder>
+    <namespace>mycompany.ru.1.0</namespace>
+    <filterSection>
+        <keywords>
+            <keyword name="main" id="main" ref="main.html"/>
+            <keyword name="start" id="start" ref="start.html"/>
+            <keyword name="contracts" id="contracts" ref="contracts.html"/>
+            <keyword name="report" id="report" ref="report.html"/>
+            <keyword name="types" id="types" ref="types.html"/>
+            <keyword name="states" id="states" ref="states.html"/>
+            <keyword name="partners" id="partners" ref="partners.html"/>
+            <keyword name="script" id="script" ref="script.html"/>
+        </keywords>
+        <files>
+            <file>main.html</file>
+            <file>start.html</file>
+            <file>contracts.html</file>
+            <file>report.html</file>
+            <file>types.html</file>
+            <file>states.html</file>
+            <file>partners.html</file>
+            <file>script.html</file>
+        </files>
+    </filterSection>
+</QtHelpProject>
